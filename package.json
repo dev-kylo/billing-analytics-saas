@@ -1,0 +1,29 @@
+{
+    "name": "billing-analytics-saas",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Skeleton saas",
+    "main": "src/server.js",
+    "scripts": {
+        "start": "node src/server.js",
+        "dev": "nodemon src/server.js",
+        "docs": "jsdoc -c jsdoc.config.json",
+        "test": "jest",
+        "migrate": "knex migrate:latest",
+        "migrate:make": "knex migrate:make",
+        "migrate:rollback": "knex migrate:rollback"
+    },
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "body-parser": "^1.20.2",
+        "express": "^4.18.3",
+        "knex": "^3.1.0",
+        "pg": "^8.11.3"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0",
+        "jsdoc": "^4.0.2",
+        "nodemon": "^3.1.0",
+        "supertest": "^7.0.0"
+    }
+}
