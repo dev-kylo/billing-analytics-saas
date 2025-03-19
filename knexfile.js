@@ -1,4 +1,4 @@
-// Update with your config settings.
+require('dotenv').config();
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -12,7 +12,7 @@ module.exports = {
     // },
 
     development: {
-        client: 'postgresql',
+        client: 'pg',
         connection: {
             host: process.env.DB_HOST || 'localhost',
             port: process.env.DB_PORT || 5432,

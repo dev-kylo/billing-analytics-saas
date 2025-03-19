@@ -1,3 +1,5 @@
+/* eslint-disable import/no-extraneous-dependencies */
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const errorHandler = require('./middlewares/errorHandler');
