@@ -1,5 +1,3 @@
-const { gitService } = require('../services/git');
-
 /**
  * @module authController
  * @description Controller handling Git-related HTTP endpoints
@@ -15,18 +13,33 @@ const authController = {
      * @throws {Error} When webhook processing fails
      */
     async login(req, res, next) {
-         /** @type {{username: string, password: string>}} */
+        /** @type {{username: string, password: string>}} */
         const payload = req.body;
 
         try {
-            const result = await gitService.processWebhook(payload);
-            res.status(200).send(result.message)
+            const result = { ...payload }; // temp
+            res.status(200).send(result.message);
         } catch (error) {
             console.error('Webhook processing error:', error);
             error.statusCode = 500;
             error.message = 'Failed to process webhook';
             next(error); // middleware error handler will catch this
         }
-    }
+    },
+
+    async register(req, res, next) {
+        /** @type {{username: string, password: string>}} */
+        const payload = req.body;
+
+        try {
+            const result = { ...payload }; // temp
+            res.status(200).send(result.message);
+        } catch (error) {
+            console.error('Webhook processing error:', error);
+            error.statusCode = 500;
+            error.message = 'Failed to process webhook';
+            next(error); // middleware error handler will catch this
+        }
+    },
 };
 module.exports = { authController };
