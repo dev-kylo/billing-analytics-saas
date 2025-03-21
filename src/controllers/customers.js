@@ -1,4 +1,4 @@
-const model = require('../services/customer');
+const model = require('../models/customer');
 const AppError = require('../utils/AppError');
 
 /**

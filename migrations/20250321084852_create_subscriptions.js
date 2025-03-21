@@ -30,7 +30,8 @@ exports.up = function (knex) {
 
         table.decimal('price', 10, 2).notNullable();
         table.text('billing_frequency').checkIn(['monthly', 'quarterly', 'annually']);
-        table.text('status').notNullable().checkIn(['active', 'cancelled', 'paused', 'annually']);
+        table.text('status').notNullable().checkIn(['active', 'cancelled', 'paused', 'annually', 'trial']);
+        table.timestamp('trial_start_date');
         table.timestamp('trial_end_date');
         table.timestamp('next_billing_date');
 

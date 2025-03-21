@@ -2,7 +2,7 @@ const knex = require('../config/db'); // Import your Knex instance
 
 exports.getAllCustomers = () => knex('customers').select('*');
 
-exports.getCustomer = (id) => knex('customers').select('*').where({ id });
+exports.getCustomer = (id) => knex('customers').select('*').where({ id }).first();
 
 exports.createCustomer = async (firstname, surname, email) => {
     /**
