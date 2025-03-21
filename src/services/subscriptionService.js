@@ -43,3 +43,16 @@ exports.createSubscription = async (data) => {
     const result = await model.createSubscription(subscription);
     return result;
 };
+
+exports.convertTrialToActive = async (subscription) => {
+    const months = billingFrequencyToMonths[subscription.billing_frequency] || 1;
+    const nextBillingDate = addMonths(new Date(), months);
+
+    const result = await model.patchSubscription(subscription.id, {
+        status: 'active',
+        start_date: new Date(),
+        next_billing_date: nextBillingDate,
+    });
+
+    return result;
+};

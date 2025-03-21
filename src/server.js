@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const errorHandler = require('./middlewares/errorHandler');
 const routes = require('./routes');
+require('./jobs/checkTrialExpirations'); // loads and starts the cron job
 
 const PORT = process.env.PORT || 2222;
 
