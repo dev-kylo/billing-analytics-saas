@@ -18,7 +18,7 @@ exports.createCustomer = async (req, res, next) => {
         }
 
         if (!surname || typeof surname !== 'string' || surname.trim() === '') {
-            throw new AppError('Surname is required and must be a valid string.');
+            throw new AppError('Surname is required and must be a valid string.', 400);
         }
 
         if (!email || typeof email !== 'string' || email.trim() === '' || !email.includes('@')) {
@@ -62,7 +62,7 @@ exports.getCustomer = async (req, res, next) => {
         const { id } = req.params;
         if (!id) throw new AppError('No id provided for the customer');
         const result = await model.getCustomer(id);
-        if (!result || !result[0]) throw new AppError(`Customer with id ${id} not found.`);
+        if (!result || !result[0]) throw new AppError(`Customer with id ${id} not found.`, 404);
         res.status(200).json(result[0]);
     } catch (e) {
         next(e);

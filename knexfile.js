@@ -28,16 +28,13 @@ module.exports = {
         },
     },
     test: {
-        client: 'pg',
+        client: 'better-sqlite3',
         connection: {
-            host: process.env.TEST_DB_HOST || 'localhost',
-            port: process.env.TEST_DB_PORT || 5432,
-            database: process.env.TEST_DB_NAME,
-            user: process.env.TEST_DB_USER || 'postgres',
-            password: process.env.TEST_DB_PASSWORD || 'postgres',
+            filename: ':memory:', // 👈 in-memory DB (fast + isolated)
         },
+        useNullAsDefault: true,
         migrations: {
-            directory: './src/migrations',
+            directory: './migrations',
             tableName: 'knex_migrations',
         },
     },
