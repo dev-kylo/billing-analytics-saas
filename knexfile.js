@@ -23,5 +23,22 @@ module.exports = {
         migrations: {
             tableName: 'knex_migrations',
         },
+        seeds: {
+            directory: './src/seeds',
+        },
+    },
+    test: {
+        client: 'pg',
+        connection: {
+            host: process.env.TEST_DB_HOST || 'localhost',
+            port: process.env.TEST_DB_PORT || 5432,
+            database: process.env.TEST_DB_NAME,
+            user: process.env.TEST_DB_USER || 'postgres',
+            password: process.env.TEST_DB_PASSWORD || 'postgres',
+        },
+        migrations: {
+            directory: './src/migrations',
+            tableName: 'knex_migrations',
+        },
     },
 };
