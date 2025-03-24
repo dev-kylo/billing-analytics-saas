@@ -33,3 +33,13 @@ exports.patchSubscription = async (id, data) => {
         .returning('*');
     return result;
 };
+
+exports.getAllSubscriptionsByCustomerId = async (customerId) => {
+    const result = await knex('subscriptions').where('customer_id', customerId).select('*');
+    return result;
+};
+
+exports.getSubscriptionById = async (id) => {
+    const result = await knex('subscriptions').where('id', id).select('*');
+    return result;
+};

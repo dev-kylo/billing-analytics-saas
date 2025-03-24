@@ -3,7 +3,7 @@ const AppError = require('../utils/AppError');
 
 module.exports = async function validateCustomerExists(req, res, next) {
     try {
-        const customerId = req.body.customerId || req.params.customerId;
+        const customerId = req.body.customerId || req.params.customerId || req.query.customerId;
         if (!customerId) {
             throw new AppError('customerId is required', 400);
         }

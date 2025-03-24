@@ -5,9 +5,8 @@ const validateCustomerExists = require('../middlewares/validateCustomerExists');
 const router = express.Router();
 
 router.post('/', validateCustomerExists, subscriptionsController.createSubscription);
-// router.get('/', subscriptionsController.getAllSubscriptions);
-// router.get('/:id', subscriptionsController.getCustomer);
-// router.put('/:id', subscriptionsController.updateCustomer);
-// router.patch('/:id', subscriptionsController.patchCustomer);
+router.get('/', validateCustomerExists, subscriptionsController.getAllSubscriptions);
+router.get('/:id', subscriptionsController.getSubscription);
+router.patch('/:id', subscriptionsController.patchSubscription);
 
 module.exports = router;
