@@ -26,7 +26,7 @@ exports.getExpiredTrials = async () => {
 exports.patchSubscription = async (id, data) => {
     const result = await knex('subscriptions')
         .where({ id })
-        .update({
+        .patch({
             ...data,
             updated_at: knex.fn.now(),
         })

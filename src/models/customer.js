@@ -33,7 +33,7 @@ exports.updateCustomer = async (id, data) => {
 exports.patchCustomer = async (id, data) => {
     const result = await knex('customers')
         .where({ id })
-        .update({
+        .patch({
             ...data,
             updated_at: knex.fn.now(),
         })
