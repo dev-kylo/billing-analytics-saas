@@ -68,24 +68,54 @@ exports.getSubscription = async (req, res, next) => {
  * @returns {Promise<void>}
  */
 exports.patchSubscription = async (req, res, next) => {
+    // Add this validation before processing
+    const validateSubscriptionChanges = (data) => {
+        // Don't allow price changes during trial
+        if (data.price && data.status === 'trial') {
+            throw new AppError('Cannot change price during trial period');
+        }
+
+        // Don't allow billing frequency changes for cancelled subscriptions
+        if (data.billing_frequency && data.status === 'cancelled') {
+            throw new AppError('Cannot change billing frequency for cancelled subscriptions');
+        }
+
+        // Don't allow price/billing changes if subscription is ending
+        if ((data.price || data.billing_frequency) && data.end_date) {
+            throw new AppError('Cannot change billing details for ending subscriptions');
+        }
+    };
+
     try {
         const data = req.body;
         const { id } = req.params;
         if (!id) throw new AppError('No id provided for the customer');
 
-        const allowedFields = [
-            'price',
-            'currency',
-            'billing_frequency',
-            'auto_renew',
-            'status',
-            'end_date',
-            'start_date',
-            'trial_end_date',
-            'next_billing_date',
-        ];
-        const patchData = Object.fromEntries(Object.entries(data).filter(([key]) => allowedFields.includes(key)));
-        const result = await model.patchSubscription(id, patchData);
+        validateSubscriptionChanges(data);
+
+        // Fields that trigger proration
+        const prorationTriggerFields = ['price', 'billing_frequency'];
+
+        // Check if any of the changed fields should trigger proration
+        const requiresProration = Object.keys(data).some((key) => prorationTriggerFields.includes(key));
+        let result;
+
+        if (requiresProration) result = await service.updateSubscriptionWithProration(id, data);
+        else {
+            const allowedFields = [
+                'price',
+                'currency',
+                'billing_frequency',
+                'auto_renew',
+                'status',
+                'end_date',
+                'start_date',
+                'trial_end_date',
+                'next_billing_date',
+            ];
+            const patchData = Object.fromEntries(Object.entries(data).filter(([key]) => allowedFields.includes(key)));
+            result = await model.patchSubscription(id, patchData);
+        }
         res.status(200).json(result || []);
     } catch (e) {
         next(e);

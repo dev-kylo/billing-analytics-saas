@@ -14,15 +14,17 @@ exports.up = async function (knex) {
         table.string('previous_billing_frequency');
         table.string('new_billing_frequency');
         table.decimal('prorated_amount', 10, 2);
-        table.decimal('refund_amount', 10, 2);
+        table.decimal('credit_amount', 10, 2);
         table.string('change_type').notNullable(); // upgrade, downgrade, frequency_change, etc.
         table.timestamp('effective_date').notNullable();
         table.timestamps(true, true);
     });
 
     await knex.schema.alterTable('invoices', (table) => {
-        table.decimal('refund_amount', 10, 2).defaultTo(0);
+        table.decimal('credit_amount', 10, 2).defaultTo(0);
         table.decimal('total_amount', 10, 2);
+        table.integer('previous_invoice_id');
+        table.foreign('previous_invoice_id').references('invoices.id').onDelete('CASCADE');
         table.boolean('is_prorated').defaultTo(false);
     });
 

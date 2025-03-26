@@ -1,19 +1,45 @@
 // subscriptionService.js
 const model = require('../models/subscription');
+const invoiceService = require('./invoiceService');
 const { addMonths, billingFrequencyToMonths } = require('../utils/helpers');
 
+const CHANGE_TYPES = {
+    UPGRADE: 'upgrade',
+    DOWNGRADE: 'downgrade',
+    FREQUENCY_CHANGE: 'frequency_change',
+    MIXED_CHANGE: 'mixed_change',
+};
+
+const allowedFields = [
+    'price',
+    'currency',
+    'billing_frequency',
+    'auto_renew',
+    'status',
+    'end_date',
+    'start_date',
+    'trial_end_date',
+    'next_billing_date',
+];
+
+function determineChangeType(oldSubscription, newData) {
+    const changes = [];
+
+    if (newData.price !== oldSubscription.price) {
+        changes.push(newData.price > oldSubscription.price ? 'upgrade' : 'downgrade');
+    }
+
+    if (newData.billing_frequency !== oldSubscription.billing_frequency) {
+        changes.push('frequency_change');
+    }
+
+    if (changes.length > 1) return CHANGE_TYPES.MIXED_CHANGE;
+    if (changes.length === 0) return null;
+
+    return changes[0];
+}
+
 exports.createSubscription = async (data) => {
-    // if isTrial false,
-    //  set next billiing date according to billingFrequency
-    // set status to active
-    // If isTrial true,
-    // set end trial date 1 month later, and next billing dater after that
-    //  set status to trial
-
-    // autoRenew is default true
-    // endDate can be null, startDate null also if isTrial
-    // billingFrequency defaults to month
-
     const now = new Date();
     const billingFrequency = data?.billingFrequency || 'monthly';
     const autoRenew = data?.autoRenew !== false; // default to true
@@ -44,6 +70,12 @@ exports.createSubscription = async (data) => {
     return result;
 };
 
+exports.patchSubscription = async (id, data) => {
+    const patchData = Object.fromEntries(Object.entries(data).filter(([key]) => allowedFields.includes(key)));
+    const result = await model.patchSubscription(id, patchData);
+    return result;
+};
+
 exports.convertTrialToActive = async (subscription) => {
     const months = billingFrequencyToMonths[subscription.billing_frequency] || 1;
     const nextBillingDate = addMonths(new Date(), months);
@@ -55,4 +87,77 @@ exports.convertTrialToActive = async (subscription) => {
     });
 
     return result;
+};
+
+exports.recordSubscriptionChange = async (oldSubscription, newData, proratedAmount, refundAmount) => {
+    const changeType = determineChangeType(oldSubscription, newData);
+
+    if (!changeType) return null;
+
+    const change = {
+        subscription_id: oldSubscription.id,
+        previous_price: oldSubscription.price,
+        new_price: newData?.price || oldSubscription.price,
+        previous_billing_frequency: oldSubscription.billing_frequency,
+        new_billing_frequency: newData?.billing_frequency || oldSubscription.billing_frequency,
+        prorated_amount: proratedAmount,
+        refund_amount: refundAmount,
+        change_type: changeType,
+        effective_date: new Date(),
+    };
+
+    return model.createSubscriptionChange(change);
+};
+
+exports.updateSubscriptionWithProration = async (existingSubscription, newData) => {
+    const now = new Date();
+
+    // Calculate proration amounts
+    const currentPeriodEnd = new Date(existingSubscription.next_billing_date);
+    const totalDays = (currentPeriodEnd - existingSubscription.start_date) / (1000 * 60 * 60 * 24);
+    const remainingDays = (currentPeriodEnd - now) / (1000 * 60 * 60 * 24);
+
+    const creditAmount = (existingSubscription.price * remainingDays) / totalDays;
+    const newProratedAmount = (newData.price * remainingDays) / totalDays;
+
+    // Check if current period is paid and calculate refundable amount
+    const { refundableAmount, creditStatus } = await invoiceService.calculateSubscriptionChangeCredit(
+        existingSubscription.id,
+        creditAmount
+    );
+
+    // Update subscription
+    const patchData = Object.fromEntries(Object.entries(newData).filter(([key]) => allowedFields.includes(key)));
+    const updatedSubscription = await model.patchSubscription(existingSubscription.id, {
+        ...patchData,
+        price: newData.price || existingSubscription.price,
+        previous_price: newData.price ? existingSubscription.price : null,
+        updated_at: now,
+    });
+
+    // Create prorated invoice
+    const proratedInvoice = await invoiceService.createProratedInvoice(
+        updatedSubscription,
+        newProratedAmount,
+        creditAmount
+    );
+
+    console.log('updatedSubscription With Proration', {
+        subscription: updatedSubscription,
+        proratedAmount: newProratedAmount,
+        creditAmount,
+        refundableAmount,
+        creditStatus,
+        proratedInvoice,
+    });
+
+    // Record the change
+    return this.recordSubscriptionChange(
+        existingSubscription,
+        newData,
+        newProratedAmount,
+        creditAmount,
+        refundableAmount,
+        creditStatus
+    );
 };

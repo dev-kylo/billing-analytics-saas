@@ -52,3 +52,67 @@ exports.calculateBalanceDue = async (invoice, subscription) => {
     const balanceDue = subscription.price - invoice.amount; // this will become total amount
     return balanceDue;
 };
+
+exports.createProratedInvoice = async (subscription, proratedAmount, creditAmount) => {
+    const now = new Date();
+
+    // Check if there's a invoice for the current period
+    const currentPeriodPendingInvoice = await knex('invoices')
+        .where({
+            subscription_id: subscription.id,
+            status: 'pending',
+        })
+        .whereBetween('period_start', [subscription.start_date, subscription.next_billing_date])
+        .first();
+
+    /**
+     * If there's an unpaid invoice for the current period, we need to void it
+     */
+    if (currentPeriodPendingInvoice) {
+        await model.patchInvoice(currentPeriodPendingInvoice.id, { status: 'void' });
+    }
+
+    const invoice = {
+        customer_id: subscription.customer_id,
+        subscription_id: subscription.id,
+        amount: proratedAmount,
+        credit_amount: creditAmount,
+        total_amount: proratedAmount - creditAmount,
+        currency: subscription.currency,
+        status: 'pending',
+        invoice_date: now,
+        due_date: addMonths(now, 1),
+        period_start: now,
+        period_end: subscription.next_billing_date,
+        is_prorated: true,
+        previous_invoice_id: currentPeriodPendingInvoice?.id,
+    };
+
+    return model.createInvoice(invoice);
+};
+
+exports.calculateSubscriptionChangeCredit = async (subscriptionId, creditAmount) => {
+    // Find the most recent paid invoice for this subscription
+    const paidInvoice = await knex('invoices')
+        .where({
+            subscription_id: subscriptionId,
+            status: 'paid',
+        })
+        .orderBy('invoice_date', 'desc')
+        .first();
+
+    if (paidInvoice) {
+        // This amount should be refunded to the customer
+        return {
+            refundableAmount: creditAmount,
+            paidInvoiceId: paidInvoice.id,
+            creditStatus: 'refundable',
+        };
+    }
+
+    // If no paid invoice exists, this amount should be credited to the next invoice
+    return {
+        refundableAmount: 0,
+        creditStatus: 'pending',
+    };
+};
