@@ -127,3 +127,19 @@ exports.generateRecognitionForSubscription = async (subscription, invoiceId, rec
 
     return recognitionModel.createRecognitionEntries(entries);
 };
+
+exports.getSubscriptionRecognitionEntries = async (id, status, start, end) => {
+    const entries = await recognitionModel.getBySubscription(id, {
+        status,
+        start,
+        end,
+    });
+
+    const summary = await recognitionModel.getSubscriptionSummary(id, {
+        status,
+        start,
+        end,
+    });
+
+    return { entries, summary };
+};

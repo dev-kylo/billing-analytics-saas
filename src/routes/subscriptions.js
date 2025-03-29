@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.post('/', validateCustomerExists, subscriptionsController.createSubscription);
 router.get('/', validateCustomerExists, subscriptionsController.getAllSubscriptions);
+router.get('/:id/revenue-recognition', subscriptionsController.getSubscriptionRecognition);
+router.patch('/:id', subscriptionsController.patchSubscription);
 router.get('/:id', subscriptionsController.getSubscription);
 router.patch('/:id', subscriptionsController.patchSubscription);
 

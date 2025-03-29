@@ -1,6 +1,7 @@
 const knex = require('../config/db');
 const { addMonths, billingFrequencyToMonths } = require('../utils/helpers');
 const model = require('../models/invoice');
+const revenueRecognitionService = require('./revenueRecognitionService');
 
 exports.createInvoice = async (invoiceData, subscription) => {
     const { currency } = invoiceData;
@@ -43,9 +44,14 @@ exports.createInvoice = async (invoiceData, subscription) => {
     // if the amount is less than the subscription price, then we should have a 'total amount' which begins
     // with the subscription price and then we subtract the amount from it
 
-    const result = await model.createInvoice(invoice);
+    const invoiceEntry = await model.createInvoice(invoice);
 
-    return result;
+    await revenueRecognitionService.generateRecognitionForSubscription(subscription, invoiceEntry.id);
+
+    // We should actually create a knex transaction tying the invoice and the revenue recognition entries together
+    // so that we can roll back the invoice if the revenue recognition entries fail
+
+    return invoiceEntry;
 };
 
 exports.calculateBalanceDue = async (invoice, subscription) => {
@@ -88,7 +94,11 @@ exports.createProratedInvoice = async (subscription, proratedAmount, creditAmoun
         previous_invoice_id: currentPeriodPendingInvoice?.id,
     };
 
-    return model.createInvoice(invoice);
+    const invoiceEntry = await model.createInvoice(invoice);
+
+    await revenueRecognitionService.generateRecognitionForSubscription(subscription, invoiceEntry.id);
+
+    return invoiceEntry;
 };
 
 exports.calculateSubscriptionChangeCredit = async (subscriptionId, creditAmount) => {

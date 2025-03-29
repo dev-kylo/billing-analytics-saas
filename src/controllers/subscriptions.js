@@ -121,3 +121,19 @@ exports.patchSubscription = async (req, res, next) => {
         next(e);
     }
 };
+
+exports.getSubscriptionRecognition = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status, start, end } = req.query;
+        const { summary, entries } = await service.getSubscriptionRecognitionEntries(id, status, start, end);
+        res.status(200).json({
+            total: summary.total,
+            recognized: summary.recognized,
+            pending: summary.pending,
+            entries,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
