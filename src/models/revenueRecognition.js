@@ -44,3 +44,28 @@ exports.getSubscriptionSummary = async (subscriptionId, filters = {}) => {
     summary.total = summary.recognized + summary.pending;
     return summary;
 };
+
+// UPDATE revenue_recognition rr
+// SET status = 'recognized',
+//     recognized_at = NOW()
+// FROM subscriptions s
+// WHERE rr.subscription_id = s.id
+//   AND rr.status = 'pending'
+//   AND rr.recognition_start_date <= CURRENT_DATE
+//   AND CURRENT_DATE BETWEEN s.start_date AND s.end_date;
+
+exports.updateRecognitionStatus = async () =>
+    knex('revenue_recognition as rr')
+        .update({
+            status: 'recognized',
+            recognized_at: knex.fn.now(),
+        })
+        .where('rr.status', 'pending')
+        .andWhere('rr.recognition_start_date', '<=', knex.fn.now())
+        .whereExists(function () {
+            this.select('*')
+                .from('subscriptions as s')
+                .whereRaw('s.id = rr.subscription_id')
+                .andWhere('s.start_date', '<=', knex.fn.now())
+                .andWhere('s.end_date', '>=', knex.fn.now());
+        });
