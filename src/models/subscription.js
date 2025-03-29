@@ -43,3 +43,8 @@ exports.getSubscriptionById = async (id) => {
     const result = await knex('subscriptions').where('id', id).select('*');
     return result;
 };
+
+exports.createSubscriptionChange = async (data) => {
+    const result = await knex('subscription_changes').insert(data).returning('*');
+    return result;
+};
